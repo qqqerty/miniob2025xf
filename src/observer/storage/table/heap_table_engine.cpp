@@ -341,3 +341,21 @@ RC HeapTableEngine::open()
   }
   return rc;
 }
+
+RC HeapTableEngine::destroy_indexes() {
+    RC rc = RC::SUCCESS;
+    if (indexes_.empty()) {
+        LOG_INFO("No indexes to destroy for table %s", table_meta_->name());
+        return rc;
+    }
+    for (auto index : indexes_) {
+        RC tmp_rc = index->destroy();  // 这会删除索引文件
+        if (tmp_rc != RC::SUCCESS) {
+            LOG_ERROR("Failed to destroy index %s. rc=%s", index->index_meta().name(), strrc(tmp_rc));
+            rc = tmp_rc;
+        }
+        delete index;
+    }
+    indexes_.clear();
+    return rc;
+}

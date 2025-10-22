@@ -44,6 +44,7 @@ public:
   {
     return RC::UNSUPPORTED;
   }
+  virtual RC destroy() = 0; 
   virtual RC open(Table *table, const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta)
   {
     return RC::UNSUPPORTED;
@@ -111,5 +112,6 @@ public:
    * 如果没有更多的元素，返回RECORD_EOF
    */
   virtual RC next_entry(RID *rid) = 0;
-  virtual RC destroy()            = 0;
+  virtual RC destroy()=0;
+ 
 };

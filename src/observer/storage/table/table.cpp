@@ -43,6 +43,7 @@ Table::~Table()
   }
 }
 
+
 RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, const char *base_dir,
     span<const AttrInfoSqlNode> attributes, const vector<string> &primary_keys, StorageFormat storage_format, StorageEngine storage_engine)
 {
@@ -125,6 +126,31 @@ RC Table::create(Db *db, int32_t table_id, const char *path, const char *name, c
   return rc;
 }
 
+RC Table::drop(const char *path,const char*base_dir)
+{
+  if (engine_) {
+        RC rc = engine_->destroy_indexes();
+        if (rc != RC::SUCCESS) {
+            LOG_ERROR("Failed to destroy indexes for table %s", table_meta_.name());
+        }
+    }
+  engine_.reset(nullptr);  
+  if (::remove(path) < 0) {
+    return RC::INTERNAL;
+  }  
+  string data_file = table_data_file(base_dir, table_meta_.name());
+  BufferPoolManager &bpm = db_->buffer_pool_manager();
+ 
+  RC rc = bpm.remove_file(data_file.c_str());
+  if (rc != RC::SUCCESS) {
+    return rc;
+  }
+  else {
+    LOG_INFO("7.Successfully remove data file. file name=%s", data_file.c_str());
+  }
+  
+  return RC::SUCCESS;
+}
 RC Table::open(Db *db, const char *meta_file, const char *base_dir)
 {
   // 加载元数据文件

@@ -56,7 +56,7 @@ public:
   virtual RC     open()                                                                      = 0;
   // TODO: remove this function
   virtual RC init() = 0;
-
+  virtual RC destroy_indexes() = 0; 
 protected:
   TableMeta *table_meta_ = nullptr;
 };

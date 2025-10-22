@@ -32,7 +32,7 @@ DefaultHandler::~DefaultHandler() noexcept { destroy(); }
 
 RC DefaultHandler::init(const char *base_dir, const char *trx_kit_name, const char *log_handler_name, const char *storage_engine)
 {
-  // æ£€æŸ¥ç›®å½•æ˜¯å¦å­˜åœ¨ï¼Œæˆ–è€…åˆ›å»º
+  // æ£€æŸ¥ç›®å½•æ˜¯å¦å­˜åœ?ï¼Œæˆ–è€…åˆ›å»?
   filesystem::path db_dir(base_dir);
   db_dir /= "db";
   error_code ec;
@@ -85,7 +85,7 @@ RC DefaultHandler::create_db(const char *dbname)
     return RC::INVALID_ARGUMENT;
   }
 
-  // å¦‚æœå¯¹åº”åå½•å·²ç»å­˜åœ¨ï¼Œè¿”å›é”™è¯¯
+  // å¦‚æœå¯¹åº”åå½•å·²ç»å­˜åœ¨ï¼Œè¿”å›é”™è¯?
   filesystem::path dbpath = db_dir_ / dbname;
   if (filesystem::is_directory(dbpath)) {
     LOG_WARN("Db already exists: %s", dbname);
@@ -142,7 +142,14 @@ RC DefaultHandler::create_table(const char *dbname, const char *relation_name, s
   return db->create_table(relation_name, attributes, {});
 }
 
-RC DefaultHandler::drop_table(const char *dbname, const char *relation_name) { return RC::UNIMPLEMENTED; }
+RC DefaultHandler::drop_table(const char *dbname, const char *relation_name) { 
+
+   Db *db = find_db(dbname);  // ÕâÊÇÔ­ÓĞµÄ´úÂë£¬ÓÃÀ´²éÕÒ¶ÔÓ¦µÄÊı¾İ¿â£¬²»¹ıÄ¿Ç°Ö»ÓĞÒ»¸ö¿â
+  if(db == nullptr) {
+    return RC::SCHEMA_DB_NOT_OPENED;
+  }
+  return db->drop_table(relation_name); // Ö±½Óµ÷ÓÃdbµÄÉ¾µô½Ó¿Ú
+   }
 
 Db *DefaultHandler::find_db(const char *dbname) const
 {

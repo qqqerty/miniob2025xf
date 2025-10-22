@@ -1,3 +1,4 @@
+add_definitions("-Wall -g")
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_STANDARD 20)
 
@@ -12,7 +13,7 @@ SET(UNITTEST_OUTPUT_PATH ${PROJECT_BINARY_DIR}/unittest)
 SET(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/deps/3rd/usr/local;/usr/local;${CMAKE_PREFIX_PATH}")
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-# 设置默认构建类型为 Debug
+# 设置默认构建类型丄1�7 Debug
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type:Default is debug" FORCE)
 endif()
@@ -37,7 +38,7 @@ OPTION(USE_MUSL_LIBC "Use musl libc" OFF)
 OPTION(WITH_CPPLINGS "Compile cpplings" ON)
 
 MESSAGE(STATUS "HOME dir: $ENV{HOME}")
-#SET(ENV{变量名} 值)
+#SET(ENV{变量名} 倄1�7)
 IF(WIN32)
     MESSAGE(STATUS "This is windows.")
     ADD_DEFINITIONS(-DWIN32)

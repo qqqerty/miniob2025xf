@@ -793,6 +793,11 @@ RC BplusTreeHandler::sync()
   return disk_buffer_pool_->flush_all_pages();
 }
 
+RC BplusTreeHandler::destroy()
+{
+  
+  return RC::SUCCESS;
+}
 RC BplusTreeHandler::create(LogHandler &log_handler,
                             BufferPoolManager &bpm,
                             const char *file_name, 

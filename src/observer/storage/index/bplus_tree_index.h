@@ -30,6 +30,7 @@ public:
   RC create(Table *table, const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta) override;
   RC open(Table *table, const char *file_name, const IndexMeta &index_meta, const FieldMeta &field_meta) override;
   RC close();
+  RC destroy() override; 
 
   RC insert_entry(const char *record, const RID *rid) override;
   RC delete_entry(const char *record, const RID *rid) override;
@@ -59,8 +60,8 @@ public:
   ~BplusTreeIndexScanner() noexcept override;
 
   RC next_entry(RID *rid) override;
+  
   RC destroy() override;
-
   RC open(const char *left_key, int left_len, bool left_inclusive, const char *right_key, int right_len,
       bool right_inclusive);
 
