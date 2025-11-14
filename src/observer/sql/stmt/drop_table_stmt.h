@@ -25,7 +25,7 @@ class Db;
 /**
  * @brief 表示删除表的语句
  * @ingroup Statement
- * @details 虽然解析成了stmt，但是与原始的SQL解析后的数据也差不多
+ * @details 
  */
 class DropTableStmt : public Stmt
 {
