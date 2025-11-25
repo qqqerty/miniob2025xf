@@ -152,12 +152,14 @@ public:
     ASSERT(!this->speces_.empty(), "RowTuple speces empty!");
     const FieldMeta* null_field = this->speces_.front()->field().meta();
     ASSERT(nullptr != null_field && CHARS == null_field->type(), "RowTuple get null field failed!");
-    bitmap_.init(record->data() + null_field->offset(), null_field->len());
+    bitmap_.init(record->data() + null_field->offset(), this->speces_.size());
   }
 
-  void set_schema(const Table *table, const std::vector<FieldMeta> *fields)
+  void set_schema(const Table *table)
   {
+    ASSERT(nullptr != table, "RowTuple set_schema with a null table");
     table_ = table;
+    const std::vector<FieldMeta> *fields = table_->table_meta().field_metas();
     this->speces_.reserve(fields->size());
     for (const FieldMeta &field : *fields) {
       speces_.push_back(new FieldExpr(table, &field));
@@ -245,34 +247,39 @@ class ProjectTuple : public Tuple
 {
 public:
   ProjectTuple() = default;
-  virtual ~ProjectTuple() { exprs_.clear(); }
+  virtual ~ProjectTuple()
+  {
+    for (TupleCellSpec *spec : speces_) {
+      delete spec;
+    }
+    speces_.clear();
+  }
 
   void set_tuple(Tuple *tuple)
   {
     this->tuple_ = tuple;
   }
 
-  void add_expr(std::unique_ptr<Expression> expr)
+  void add_cell_spec(TupleCellSpec *spec)
   {
-    exprs_.emplace_back(std::move(expr));
+    speces_.push_back(spec);
   }
   int cell_num() const override
   {
-    return exprs_.size();
+    return speces_.size();
   }
 
   RC cell_at(int index, Value &cell) const override
   {
-    if (index < 0 || index >= static_cast<int>(exprs_.size())) {
+    if (index < 0 || index >= static_cast<int>(speces_.size())) {
       return RC::INTERNAL;
     }
     if (tuple_ == nullptr) {
       return RC::INTERNAL;
     }
 
-    // 原本这里会根据 tuple cell spec 去 tuple_ 里 find cell
-    // 现在这个逻辑是在 FieldExpr 的 get_value 里面
-    return exprs_[index]->get_value(*tuple_, cell);
+    const TupleCellSpec *spec = speces_[index];
+    return tuple_->find_cell(*spec, cell);
   }
 
   RC find_cell(const TupleCellSpec &spec, Value &cell) const override
@@ -280,10 +287,6 @@ public:
     return tuple_->find_cell(spec, cell);
   }
 
-  const std::vector<std::unique_ptr<Expression>>& expressions() const
-  {
-    return exprs_;
-  }
 #if 0
   RC cell_spec_at(int index, const TupleCellSpec *&spec) const override
   {
@@ -293,11 +296,9 @@ public:
     spec = speces_[index];
     return RC::SUCCESS;
   }
-private:
-  std::vector<TupleCellSpec *> speces_;
 #endif
 private:
-  std::vector<std::unique_ptr<Expression>> exprs_;
+  std::vector<TupleCellSpec *> speces_;
   Tuple *tuple_ = nullptr;
 };
 
