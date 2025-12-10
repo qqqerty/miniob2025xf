@@ -89,15 +89,15 @@ RC LogicalPlanGenerator::create_plan(
   RC rc = RC::SUCCESS;
 
   const std::vector<SelectStmt::JoinTables> &tables = select_stmt->join_tables();
-  const std::vector<Field> &all_fields = select_stmt->query_fields();
+  // const std::vector<Field> &all_fields = select_stmt->query_fields();
 
-  auto process_one_table = [this, &all_fields](unique_ptr<LogicalOperator>& prev_oper, Table* table, FilterStmt* fu) {
-    std::vector<Field> fields;
-    for (const Field &field : all_fields) {
-      if (0 == strcmp(field.table_name(), table->name())) {
-        fields.push_back(field);
-      }
-    }
+  auto process_one_table = [this/*, &all_fields*/](unique_ptr<LogicalOperator>& prev_oper, Table* table, FilterStmt* fu) {
+    std::vector<Field> fields; // TODO(wbj) 现在没用这个
+    // for (const Field &field : all_fields) {
+    //   if (0 == strcmp(field.table_name(), table->name())) {
+    //     fields.push_back(field);
+    //   }
+    // }
     unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, fields, true/*readonly*/));
     unique_ptr<LogicalOperator> predicate_oper;
     if (nullptr != fu) {
@@ -155,7 +155,7 @@ RC LogicalPlanGenerator::create_plan(
     return rc;
   }
 
-  unique_ptr<LogicalOperator> project_oper(new ProjectLogicalOperator(all_fields));
+  unique_ptr<LogicalOperator> project_oper(new ProjectLogicalOperator(std::move(select_stmt->projects())));
   if (predicate_oper) {
     if (outside_prev_oper) {
       predicate_oper->add_child(std::move(outside_prev_oper));
@@ -171,20 +171,6 @@ RC LogicalPlanGenerator::create_plan(
   return RC::SUCCESS;
 }
 
-std::unique_ptr<ComparisonExpr> filt_unit2comp_expr(const FilterUnit* filter_unit) {
-  const FilterObj &filter_obj_left = filter_unit->left();
-  const FilterObj &filter_obj_right = filter_unit->right();
-
-  unique_ptr<Expression> left(filter_obj_left.is_attr
-                                        ? static_cast<Expression *>(new FieldExpr(filter_obj_left.field))
-                                        : static_cast<Expression *>(new ValueExpr(filter_obj_left.value)));
-
-  unique_ptr<Expression> right(filter_obj_right.is_attr
-                                        ? static_cast<Expression *>(new FieldExpr(filter_obj_right.field))
-                                        : static_cast<Expression *>(new ValueExpr(filter_obj_right.value)));
-
-  return std::make_unique<ComparisonExpr>(filter_unit->comp(), std::move(left), std::move(right));
-}
 // you have to std::move(cmp_exprs)
 unique_ptr<PredicateLogicalOperator> cmp_exprs2predicate_logic_oper(std::vector<unique_ptr<Expression>> cmp_exprs) {
   if (!cmp_exprs.empty()) {
@@ -199,8 +185,9 @@ RC LogicalPlanGenerator::create_plan(
 {
   std::vector<unique_ptr<Expression>> cmp_exprs;
   const std::vector<FilterUnit *> &filter_units = filter_stmt->filter_units();
-  for (const FilterUnit *filter_unit : filter_units) {
-    cmp_exprs.emplace_back(filt_unit2comp_expr(filter_unit));
+  for (FilterUnit *filter_unit : filter_units) {
+    ComparisonExpr *cmp_expr = new ComparisonExpr(filter_unit->comp(),  std::move(filter_unit->left()), std::move(filter_unit->right()));
+    cmp_exprs.emplace_back(cmp_expr);
   }
 
   logical_operator = cmp_exprs2predicate_logic_oper(std::move(cmp_exprs));
@@ -212,7 +199,8 @@ RC LogicalPlanGenerator::create_plan(
     FilterUnit *filter_unit, unique_ptr<LogicalOperator> &logical_operator)
 {
   std::vector<unique_ptr<Expression>> cmp_exprs;
-  cmp_exprs.emplace_back(filt_unit2comp_expr(filter_unit));
+  ComparisonExpr *cmp_expr = new ComparisonExpr(filter_unit->comp(),  std::move(filter_unit->left()), std::move(filter_unit->right()));
+  cmp_exprs.emplace_back(cmp_expr);
 
   logical_operator = cmp_exprs2predicate_logic_oper(std::move(cmp_exprs));
   return RC::SUCCESS;
@@ -302,9 +290,7 @@ RC LogicalPlanGenerator::create_plan(
         return rc;
       }
   }
-  std::vector<Value>values;
-  values.push_back(*(update_stmt->values()));
-  unique_ptr<LogicalOperator> update_oper(new UpdateLogicalOperator(table,values,*(update_stmt->update_fields())));
+  unique_ptr<LogicalOperator> update_oper(new UpdateLogicalOperator(table, update_stmt->values(), update_stmt->update_fields()));
 
   if (predicate_oper) {
     predicate_oper->add_child(std::move(table_get_oper));

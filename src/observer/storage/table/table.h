@@ -82,12 +82,13 @@ public:
   RC get_record(const RID &rid, Record &record);
 
   //将该record的attr_name列更新为 value
-  RC update_record(Record &record ,const char* attr_name,Value * value);
+  RC update_record(Record &record, const char* attr_name, Value *value);
+  RC update_record(Record &record, const std::vector<std::string> &attr_names, const std::vector<Value*> &values);
   
   RC recover_insert_record(Record &record);
 
   // TODO refactor
-  RC create_index(Trx *trx, const FieldMeta *field_meta, const char *index_name);
+  RC create_index(Trx *trx, bool unique, const std::vector<const FieldMeta*> &field_metas, const char *index_name);
 
   RC get_record_scanner(RecordFileScanner &scanner, Trx *trx, bool readonly);
 
@@ -101,6 +102,10 @@ public:
   const char *name() const;
 
   const TableMeta &table_meta() const;
+  const std::vector<Index *> &indexes() const
+  {
+    return indexes_;
+  }
 
   RC sync();
   RC drop(const char *dir);
@@ -117,6 +122,7 @@ private:
 public:
   Index *find_index(const char *index_name) const;
   Index *find_index_by_field(const char *field_name) const;
+  bool is_field_in_index(std::vector<std::string> &field_names);
 
 private:
   std::string base_dir_;
